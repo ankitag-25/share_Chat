@@ -47,6 +47,7 @@ Related post card per trend
 The detail view shows a realistic social post seeded from the trend's own data — text, author, likes, and views all derived from the trend's heatScore and tag. Satisfies the "content in detail view" requirement without needing a separate content API.
 
 
+Hosted URL:  https://sharechat.ankitagoswami2506.workers.dev/
 
 
 What I'd Build Next — 4 More Weeks
