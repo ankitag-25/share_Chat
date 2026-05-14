@@ -49,7 +49,6 @@ The detail view shows a realistic social post seeded from the trend's own data â
 
 Hosted URL:  https://sharechat.ankitagoswami2506.workers.dev/
 
-
 What I'd Build Next â€” 4 More Weeks
 
 1. Week 1  Real data pipeline: Remove anthropics Stimulated APIs and source real ones
