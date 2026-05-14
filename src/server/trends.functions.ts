@@ -1,5 +1,3 @@
-import { createServerFn } from "@tanstack/react-start/server";
-
 export type TrendItem = {
   tag: string;
   description: string;
@@ -62,12 +60,11 @@ function buildScores(raw: Omit<TrendItem, "score">[]): TrendItem[] {
   }).sort((a, b) => b.score.total - a.score.total);
 }
 
-export const getTrends = createServerFn({ method: "GET" }).handler(async () => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+export async function getTrends(): Promise<{ trends: TrendItem[]; fetchedAt: string; degraded?: boolean }> {
   const now = new Date();
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.warn("No ANTHROPIC_API_KEY, using fallback");
     return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
   }
 
@@ -78,18 +75,7 @@ export const getTrends = createServerFn({ method: "GET" }).handler(async () => {
     hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata",
   });
 
-  const prompt = `Today is ${dateStr}, ${timeStr} IST.
-
-Search the web and find what is ACTUALLY trending in India right now today on ${now.toISOString().split("T")[0]}. Look for real current events — cricket matches, Bollywood news, political developments, weather alerts, finance news, viral social media topics — happening TODAY.
-
-Return exactly 10 real trending topics as a JSON array. Each item must have:
-- "tag": English hashtag starting with # in CamelCase (e.g. #IndiaVsPakistan)
-- "description": 1 line in Hindi explaining why it is trending RIGHT NOW today
-- "category": one of — sports, news, entertainment, weather, finance, technology, politics, religion, lifestyle, health
-- "heatScore": number 1-10 based on how viral it actually is right now
-- "source": where the signal came from (e.g. "Twitter + News")
-
-Return ONLY the raw JSON array. No markdown, no backticks, no explanation text.`;
+  const prompt = `Today is ${dateStr}, ${timeStr} IST. Search the web and find what is ACTUALLY trending in India right now today on ${now.toISOString().split("T")[0]}. Look for real current events — cricket, Bollywood, politics, weather, finance, viral topics — happening TODAY. Return exactly 10 real trending topics as a JSON array. Each item: "tag" (# CamelCase hashtag), "description" (1 line Hindi), "category" (sports/news/entertainment/weather/finance/technology/politics/religion/lifestyle/health), "heatScore" (1-10), "source". Return ONLY the raw JSON array, no markdown, no backticks.`;
 
   try {
     const callClaude = async (messages: any[]) => {
@@ -107,7 +93,7 @@ Return ONLY the raw JSON array. No markdown, no backticks, no explanation text.`
           messages,
         }),
       });
-      if (!resp.ok) throw new Error(`Claude API ${resp.status}: ${await resp.text()}`);
+      if (!resp.ok) throw new Error(`Claude API ${resp.status}`);
       return resp.json() as Promise<any>;
     };
 
@@ -127,23 +113,19 @@ Return ONLY the raw JSON array. No markdown, no backticks, no explanation text.`
           .map((b: any) => ({ type: "tool_result", tool_use_id: b.id, content: "Search completed." }));
         messages.push({ role: "user", content: toolResults });
         data = await callClaude(messages);
-      } else {
-        break;
-      }
+      } else break;
     }
 
-    if (!finalText) throw new Error("No text response");
+    if (!finalText) throw new Error("No text");
     const clean = finalText.replace(/```(?:json)?/g, "").trim();
     const match = clean.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error("No JSON array found");
+    if (!match) throw new Error("No JSON array");
     const raw = JSON.parse(match[0]);
-    if (!Array.isArray(raw) || raw.length === 0) throw new Error("Empty array");
+    if (!Array.isArray(raw) || raw.length === 0) throw new Error("Empty");
 
     return { trends: buildScores(raw), fetchedAt: now.toISOString(), degraded: false };
-
   } catch (e) {
     console.error("getTrends error:", String(e));
     return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
   }
-});
-
+}
