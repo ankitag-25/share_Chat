@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getTrends, type TrendItem } from "@/api/trends.functions";
+import { getTrends, type TrendItem } from "../server/trends.functions";
 import { getTopicImages, getTopicSummary } from "@/api/topic.functions";
 
 export const Route = createFileRoute("/")({
