@@ -1,4 +1,6 @@
-export async function getTopicSummary(opts: { data: { tag: string; description?: string } }): Promise<{ summary: string }> {
+import { createServerOnlyFn } from "@tanstack/react-start/server";
+
+export const getTopicSummary = createServerOnlyFn(async (opts: { data: { tag: string; description?: string } }) => {
   const { tag, description } = opts.data;
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -26,8 +28,8 @@ export async function getTopicSummary(opts: { data: { tag: string; description?:
   } catch {
     return { summary: `"${tag}" इस वक्त भारत में चर्चा में है।` };
   }
-}
+});
 
-export async function getTopicImages(opts: { data: { tag: string; description?: string; category?: string } }): Promise<{ images: string[] }> {
-  return { images: [] };
-}
+export const getTopicImages = createServerOnlyFn(async (_opts: { data: { tag: string; description?: string; category?: string } }) => {
+  return { images: [] as string[] };
+});
