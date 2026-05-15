@@ -1,3 +1,5 @@
+import { createServerOnlyFn } from "@tanstack/react-start/server";
+
 export type TrendItem = {
   tag: string;
   description: string;
@@ -60,7 +62,7 @@ function buildScores(raw: Omit<TrendItem, "score">[]): TrendItem[] {
   }).sort((a, b) => b.score.total - a.score.total);
 }
 
-export async function getTrends(): Promise<{ trends: TrendItem[]; fetchedAt: string; degraded?: boolean }> {
+export const getTrends = createServerOnlyFn(async () => {
   const now = new Date();
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -128,4 +130,4 @@ export async function getTrends(): Promise<{ trends: TrendItem[]; fetchedAt: str
     console.error("getTrends error:", String(e));
     return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
   }
-}
+});
