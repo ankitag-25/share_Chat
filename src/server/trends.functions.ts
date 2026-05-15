@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 
-
 export type TrendItem = {
   tag: string;
   description: string;
@@ -63,7 +62,7 @@ function buildScores(raw: Omit<TrendItem, "score">[]): TrendItem[] {
   }).sort((a, b) => b.score.total - a.score.total);
 }
 
-export const getTrends = createServerOnlyFn(async () => {
+export const getTrends = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
