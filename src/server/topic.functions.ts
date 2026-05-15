@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-
+ 
 export const getTopicSummary = createServerFn({ method: "GET" })
   .validator((data: { tag: string; description?: string }) => data)
   .handler(async ({ data }) => {
