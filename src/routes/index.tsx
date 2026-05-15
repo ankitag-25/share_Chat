@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getTrends, type TrendItem } from "@/lib/trends.functions";
-import { getTopicImages, getTopicSummary } from "@/lib/topic.functions";
-
+import { getTrends, type TrendItem } from "@/server/trends.functions";
+import { getTopicImages, getTopicSummary } from "@/server/topic.functions";
 export const Route = createFileRoute("/")({
   component: HindiTrendsPage,
   loader: async () => {
