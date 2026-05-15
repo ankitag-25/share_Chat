@@ -1,4 +1,5 @@
-import { createServerOnlyFn } from "@tanstack/react-start/server";
+import { createServerFn } from "@tanstack/react-start";
+
 
 export type TrendItem = {
   tag: string;
