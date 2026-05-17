@@ -65,62 +65,6 @@ function buildScores(raw: Omit<TrendItem, "score">[]): TrendItem[] {
 export const getTrends = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
   const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
-  }
-
-  const dateStr = now.toLocaleDateString("en-IN", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata",
-  });
-  const timeStr = now.toLocaleTimeString("en-IN", {
-    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata",
-  });
-
-  const prompt = `Today is ${dateStr}, ${timeStr} IST.
-
-Based on your knowledge of India, generate 10 realistic trending topics that would be popular in India right now across sports, news, entertainment, weather, finance, politics, and technology.
-
-Return exactly 10 items as a JSON array. Each item must have:
-- "tag": English hashtag starting with # in CamelCase
-- "description": 1 line in Hindi explaining why it is trending
-- "category": one of sports/news/entertainment/weather/finance/technology/politics/religion/lifestyle/health
-- "heatScore": number 1-10
-- "source": signal origin like "Twitter + News"
-
-Return ONLY the raw JSON array. No markdown, no backticks, no explanation.`;
-
-  try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 3000,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`Claude API ${resp.status}: ${errText}`);
-    }
-
-    const data = await resp.json() as any;
-    const text = data.content?.[0]?.text ?? "";
-    const clean = text.replace(/```(?:json)?/g, "").trim();
-    const match = clean.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error("No JSON array");
-    const raw = JSON.parse(match[0]);
-    if (!Array.isArray(raw) || raw.length === 0) throw new Error("Empty array");
-
-    return { trends: buildScores(raw), fetchedAt: now.toISOString(), degraded: false };
-  } catch (e) {
-    console.error("getTrends error:", String(e));
-    return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
-  }
+  console.log("handler called, apiKey present:", !!apiKey);
+  return { trends: buildScores(FALLBACK_TRENDS), fetchedAt: now.toISOString(), degraded: true };
 });
