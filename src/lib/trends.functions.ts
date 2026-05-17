@@ -77,53 +77,46 @@ export const getTrends = createServerFn({ method: "GET" }).handler(async () => {
     hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata",
   });
 
-  const prompt = `Today is ${dateStr}, ${timeStr} IST. Search the web and find what is ACTUALLY trending in India right now today on ${now.toISOString().split("T")[0]}. Look for real current events — cricket, Bollywood, politics, weather, finance, viral topics — happening TODAY. Return exactly 10 real trending topics as a JSON array. Each item: "tag" (# CamelCase hashtag), "description" (1 line Hindi), "category" (sports/news/entertainment/weather/finance/technology/politics/religion/lifestyle/health), "heatScore" (1-10), "source". Return ONLY the raw JSON array, no markdown, no backticks.`;
+  const prompt = `Today is ${dateStr}, ${timeStr} IST.
+
+Based on your knowledge of India, generate 10 realistic trending topics that would be popular in India right now across sports, news, entertainment, weather, finance, politics, and technology.
+
+Return exactly 10 items as a JSON array. Each item must have:
+- "tag": English hashtag starting with # in CamelCase
+- "description": 1 line in Hindi explaining why it is trending
+- "category": one of sports/news/entertainment/weather/finance/technology/politics/religion/lifestyle/health
+- "heatScore": number 1-10
+- "source": signal origin like "Twitter + News"
+
+Return ONLY the raw JSON array. No markdown, no backticks, no explanation.`;
 
   try {
-    const callClaude = async (messages: any[]) => {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5",
-          max_tokens: 3000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages,
-        }),
-      });
-      if (!resp.ok) throw new Error(`Claude API ${resp.status}`);
-      return resp.json() as Promise<any>;
-    };
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 3000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
-    let messages: any[] = [{ role: "user", content: prompt }];
-    let data = await callClaude(messages);
-    let finalText = "";
-
-    for (let i = 0; i < 6; i++) {
-      const { content, stop_reason } = data;
-      const texts = (content ?? []).filter((b: any) => b.type === "text");
-      if (texts.length > 0) finalText = texts.map((b: any) => b.text).join("");
-      if (stop_reason === "end_turn") break;
-      if (stop_reason === "tool_use") {
-        messages.push({ role: "assistant", content });
-        const toolResults = (content ?? [])
-          .filter((b: any) => b.type === "tool_use")
-          .map((b: any) => ({ type: "tool_result", tool_use_id: b.id, content: "Search completed." }));
-        messages.push({ role: "user", content: toolResults });
-        data = await callClaude(messages);
-      } else break;
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Claude API ${resp.status}: ${errText}`);
     }
 
-    if (!finalText) throw new Error("No text");
-    const clean = finalText.replace(/```(?:json)?/g, "").trim();
+    const data = await resp.json() as any;
+    const text = data.content?.[0]?.text ?? "";
+    const clean = text.replace(/```(?:json)?/g, "").trim();
     const match = clean.match(/\[[\s\S]*\]/);
     if (!match) throw new Error("No JSON array");
     const raw = JSON.parse(match[0]);
-    if (!Array.isArray(raw) || raw.length === 0) throw new Error("Empty");
+    if (!Array.isArray(raw) || raw.length === 0) throw new Error("Empty array");
 
     return { trends: buildScores(raw), fetchedAt: now.toISOString(), degraded: false };
   } catch (e) {
